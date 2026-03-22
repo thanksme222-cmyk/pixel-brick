@@ -17,11 +17,10 @@ interface VoxelCanvasProps {
 function SceneObject({ shape, color, textureUrl, scale, rotationSpeed }: any) {
   const meshRef = useRef<THREE.Group>(null);
   
-  // Safe texture loading: returns null if URL is invalid
-  const texture = textureUrl ? useLoader(THREE.TextureLoader, textureUrl, 
-    undefined, // onProgress
-    (error) => console.error("Texture Load Error:", error) // onError
-  ) : null;
+  // FIX: Added 'as THREE.Texture' to satisfy the TypeScript compiler
+  const texture = textureUrl 
+    ? (useLoader(THREE.TextureLoader, textureUrl) as THREE.Texture) 
+    : null;
 
   useFrame((state, delta) => {
     if (meshRef.current && rotationSpeed > 0) {
@@ -29,16 +28,16 @@ function SceneObject({ shape, color, textureUrl, scale, rotationSpeed }: any) {
     }
   });
 
+  // FIX: map must be a single Texture or undefined
   const materialProps = {
     color: texture ? "#ffffff" : color,
-    map: texture || undefined, // Map must be undefined, not null, for Three.js
+    map: texture || undefined, 
     roughness: 0.2,
     metalness: 0.1,
   };
 
   return (
     <group ref={meshRef}>
-      {/* Float adds that premium "studio" hover effect */}
       <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.5}>
         {shape === "box" && (
           <Box args={[scale, scale, scale]} position={[0, scale / 2, 0]} castShadow>
@@ -74,7 +73,7 @@ const VoxelCanvas = forwardRef((props: VoxelCanvasProps, ref) => {
 
   return (
     <Canvas 
-      shadows // Added this to enable actual shadow casting
+      shadows
       gl={{ preserveDrawingBuffer: true, antialias: true }} 
       camera={{ position: [5, 5, 5], fov: 45 }}
     >
@@ -87,7 +86,7 @@ const VoxelCanvas = forwardRef((props: VoxelCanvasProps, ref) => {
         angle={0.3} 
         intensity={brightness * 0.8} 
         castShadow 
-        shadow-mapSize={[1024, 1024]} // Higher quality shadows
+        shadow-mapSize={[1024, 1024]}
       />
 
       <Grid 
@@ -113,7 +112,7 @@ const VoxelCanvas = forwardRef((props: VoxelCanvasProps, ref) => {
         makeDefault 
         minPolarAngle={Math.PI / 4} 
         maxPolarAngle={Math.PI / 2.1} 
-        enableDamping={true} // Makes camera movement feel smoother
+        enableDamping={true}
       /> 
     </Canvas>
   );
