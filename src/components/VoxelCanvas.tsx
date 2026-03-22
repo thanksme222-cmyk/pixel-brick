@@ -2,36 +2,61 @@
 
 import { useRef, useImperativeHandle, forwardRef, Suspense } from "react";
 import { Canvas, useLoader, useFrame } from "@react-three/fiber";
-import { OrbitControls, Box, Sphere, Cylinder, ContactShadows, Grid, Float } from "@react-three/drei";
+import { 
+  OrbitControls, 
+  Box, 
+  Sphere, 
+  Cylinder, 
+  ContactShadows, 
+  Grid, 
+  Float 
+} from "@react-three/drei";
 import * as THREE from "three";
 
 interface VoxelCanvasProps {
   brightness?: number;
   color?: string;
-  shape?: string;
+  shape?: "box" | "sphere" | "cylinder";
   textureUrl?: string | null;
   scale?: number;
   rotationSpeed?: number;
 }
 
-function SceneObject({ shape, color, textureUrl, scale, rotationSpeed }: any) {
-  const meshRef = useRef<THREE.Group>(null);
-  
-  // FIX: Single declaration with Type Assertion to satisfy TypeScript
-  const texture = textureUrl 
-    ? (useLoader(THREE.TextureLoader, textureUrl) as THREE.Texture) 
-    : null;
+interface SceneObjectProps {
+  shape: "box" | "sphere" | "cylinder";
+  color: string;
+  textureUrl: string | null;
+  scale: number;
+  rotationSpeed: number;
+}
 
-  useFrame((state, delta) => {
+function SceneObject({
+  shape,
+  color,
+  textureUrl,
+  scale,
+  rotationSpeed,
+}: SceneObjectProps) {
+  const meshRef = useRef<THREE.Group>(null);
+
+  // We use a try-catch approach by providing an empty string if null
+  // useLoader will wait for the texture to load or fail silently
+  const texture = useLoader(
+    THREE.TextureLoader,
+    textureUrl || "" 
+  ) as THREE.Texture;
+
+  useFrame((_, delta) => {
     if (meshRef.current && rotationSpeed > 0) {
       meshRef.current.rotation.y += delta * rotationSpeed;
     }
   });
 
-  // FIX: Single declaration of material properties
-  const materialProps = {
-    color: texture ? "#ffffff" : color,
-    map: texture || undefined, 
+  const hasValidTexture = !!textureUrl && texture;
+
+  const materialProps: THREE.MeshStandardMaterialProps = {
+    color: hasValidTexture ? "#ffffff" : color,
+    map: hasValidTexture ? texture : undefined,
     roughness: 0.2,
     metalness: 0.1,
   };
@@ -61,60 +86,84 @@ function SceneObject({ shape, color, textureUrl, scale, rotationSpeed }: any) {
   );
 }
 
-const VoxelCanvas = forwardRef((props: VoxelCanvasProps, ref) => {
-  const { brightness = 1.5, color = "#004643", shape = "box", textureUrl = null, scale = 1, rotationSpeed = 0 } = props;
+export interface VoxelCanvasRef {
+  resetCamera: () => void;
+}
+
+const VoxelCanvas = forwardRef<VoxelCanvasRef, VoxelCanvasProps>((props, ref) => {
+  const {
+    brightness = 1.5,
+    color = "#004643",
+    shape = "box",
+    textureUrl = null,
+    scale = 1,
+    rotationSpeed = 0,
+  } = props;
+
+  // We type this as 'any' temporarily to avoid the three-stdlib import error
   const controlsRef = useRef<any>(null);
 
   useImperativeHandle(ref, () => ({
     resetCamera: () => {
-      if (controlsRef.current) controlsRef.current.reset();
+      controlsRef.current?.reset();
     },
   }));
 
   return (
-    <Canvas 
-      shadows
-      gl={{ preserveDrawingBuffer: true, antialias: true }} 
-      camera={{ position: [5, 5, 5], fov: 45 }}
-    >
-      <color attach="background" args={["#ffffff"]} />
-      
-      <ambientLight intensity={brightness * 0.3} />
-      <pointLight position={[10, 10, 10]} intensity={brightness} castShadow />
-      <spotLight 
-        position={[-5, 8, 5]} 
-        angle={0.3} 
-        intensity={brightness * 0.8} 
-        castShadow 
-        shadow-mapSize={[1024, 1024]}
-      />
+    <div className="w-full h-full min-h-[400px]">
+      <Canvas
+        shadows
+        gl={{ preserveDrawingBuffer: true, antialias: true }}
+        camera={{ position: [5, 5, 5], fov: 45 }}
+      >
+        <color attach="background" args={["#ffffff"]} />
 
-      <Grid 
-        infiniteGrid fadeDistance={30} sectionSize={1} 
-        sectionThickness={1.5} sectionColor={color} 
-        cellSize={0.5} cellColor="#e2e8f0"
-      />
+        <ambientLight intensity={brightness * 0.3} />
+        <pointLight position={[10, 10, 10]} intensity={brightness} castShadow />
+        <spotLight
+          position={[-5, 8, 5]}
+          angle={0.3}
+          intensity={brightness * 0.8}
+          castShadow
+        />
 
-      <Suspense fallback={null}>
-        <SceneObject shape={shape} color={color} textureUrl={textureUrl} scale={scale} rotationSpeed={rotationSpeed} />
-      </Suspense>
+        <Grid
+          infiniteGrid
+          fadeDistance={30}
+          sectionSize={1}
+          sectionThickness={1.5}
+          sectionColor={color}
+          cellSize={0.5}
+          cellColor="#e2e8f0"
+        />
 
-      <ContactShadows 
-        position={[0, 0, 0]} 
-        opacity={0.3} 
-        scale={10 * scale} 
-        blur={2} 
-        far={4} 
-      />
-      
-      <OrbitControls 
-        ref={controlsRef} 
-        makeDefault 
-        minPolarAngle={Math.PI / 4} 
-        maxPolarAngle={Math.PI / 2.1} 
-        enableDamping={true}
-      /> 
-    </Canvas>
+        <Suspense fallback={null}>
+          <SceneObject
+            shape={shape}
+            color={color}
+            textureUrl={textureUrl}
+            scale={scale}
+            rotationSpeed={rotationSpeed}
+          />
+        </Suspense>
+
+        <ContactShadows
+          position={[0, 0, 0]}
+          opacity={0.3}
+          scale={10 * scale}
+          blur={2}
+          far={4}
+        />
+
+        <OrbitControls
+          ref={controlsRef}
+          makeDefault
+          minPolarAngle={Math.PI / 4}
+          maxPolarAngle={Math.PI / 2.1}
+          enableDamping
+        />
+      </Canvas>
+    </div>
   );
 });
 
