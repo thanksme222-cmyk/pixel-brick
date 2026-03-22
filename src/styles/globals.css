@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  /* We define the names now, and can change the Hex codes anytime */
+  --color-brand-primary: #004643;   /* This is your Cyprus */
+  --color-brand-surface: #F0EDE5;   /* This is your Sand */
+  --color-brand-accent: #f97316;    /* A classic orange for buttons */
 }
