@@ -17,7 +17,7 @@ interface VoxelCanvasProps {
 function SceneObject({ shape, color, textureUrl, scale, rotationSpeed }: any) {
   const meshRef = useRef<THREE.Group>(null);
   
-  // FIX: Added 'as THREE.Texture' to satisfy the TypeScript compiler
+  // FIX: Single declaration with Type Assertion to satisfy TypeScript
   const texture = textureUrl 
     ? (useLoader(THREE.TextureLoader, textureUrl) as THREE.Texture) 
     : null;
@@ -28,7 +28,7 @@ function SceneObject({ shape, color, textureUrl, scale, rotationSpeed }: any) {
     }
   });
 
-  // FIX: map must be a single Texture or undefined
+  // FIX: Single declaration of material properties
   const materialProps = {
     color: texture ? "#ffffff" : color,
     map: texture || undefined, 
